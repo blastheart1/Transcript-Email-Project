@@ -23,6 +23,7 @@ export const noteInputSchema = z.object({
   tone: z.enum(["Warm", "Neutral", "Direct"]).optional(),
   length: z.enum(["Concise", "Standard", "Detailed"]).optional(),
   source: z.string().optional(),
+  archived: z.boolean().optional(),
   errorMessage: z.string().optional(),
 });
 

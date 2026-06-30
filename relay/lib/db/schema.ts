@@ -93,6 +93,7 @@ export const notes = pgTable("notes", {
   model: text("model"),
   provider: text("provider"),
   source: text("source").notNull().default("upload"),
+  archived: boolean("archived").notNull().default(false),
   errorMessage: text("error_message"),
   segments: jsonb("segments").$type<TranscriptSegment[]>().notNull().default([]),
   paragraphs: jsonb("paragraphs").$type<BodySegment[][]>().notNull().default([]),

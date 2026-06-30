@@ -163,6 +163,23 @@ export const BookmarkIcon = (p: IconProps) => (
   </Base>
 );
 
+export const ArchiveIcon = (p: IconProps) => (
+  <Base {...p}>
+    <rect x="3" y="4" width="18" height="4" rx="1" />
+    <path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" />
+    <path d="M10 12h4" />
+  </Base>
+);
+
+export const UnarchiveIcon = (p: IconProps) => (
+  <Base {...p}>
+    <rect x="3" y="4" width="18" height="4" rx="1" />
+    <path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" />
+    <path d="M12 18v-6" />
+    <path d="M9.5 14.5 12 12l2.5 2.5" />
+  </Base>
+);
+
 export const CloseIcon = (p: IconProps) => (
   <Base strokeWidth={2} {...p}>
     <path d="M18 6 6 18M6 6l12 12" />

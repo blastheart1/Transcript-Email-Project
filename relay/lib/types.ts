@@ -62,6 +62,8 @@ export interface Note {
   /** Which model/provider produced the current draft (for display). */
   model?: string;
   provider?: string;
+  /** Hidden from the default inbox when true. */
+  archived?: boolean;
   errorMessage?: string;
 }
 

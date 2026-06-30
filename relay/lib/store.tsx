@@ -21,7 +21,7 @@ import { DEFAULT_SIGN_OFF, DEFAULT_TONE, DEFAULT_LENGTH, SENDER } from "./consta
 import { DEFAULT_MODEL_ID } from "./models";
 
 export type View = "inbox" | "capture" | "draft" | "settings";
-export type InboxFilter = "all" | "drafts" | "sent";
+export type InboxFilter = "all" | "drafts" | "sent" | "archived";
 export interface Toast {
   kind: "info" | "ready" | "error";
   msg: string;
