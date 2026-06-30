@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base resets and design-system primitives ported from the Relay prototype. */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    font-family: var(--font-public-sans), "Public Sans", system-ui, -apple-system, sans-serif;
+    background: #f6f7f8;
+    color: #16242b;
+  }
+  *:focus {
+    outline: none;
+  }
+  :focus-visible {
+    outline: 2px solid #0e3a4f;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+  ::selection {
+    background: #cfe0e3;
+  }
+}
+
+/* Global hover/focus tooltip (created at runtime by useTooltips). */
+#relay-tip {
+  position: fixed;
+  z-index: 9999;
+  background: #16242b;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  max-width: 230px;
+  pointer-events: none;
+  box-shadow: 0 6px 20px rgba(16, 36, 43, 0.22);
+  opacity: 0;
+  transform: translate(-50%, -100%);
+  transition: opacity 0.1s ease;
+  font-family: var(--font-public-sans), "Public Sans", system-ui, sans-serif;
+}
+#relay-tip[data-show="1"] {
+  opacity: 1;
+}
+
+/* Mobile: collapse the sidebar into a top bar (matches prototype @820px). */
+@media (max-width: 820px) {
+  #shell {
+    flex-direction: column;
+  }
+  #sidebar {
+    width: 100% !important;
+    height: auto !important;
+    flex-direction: row !important;
+    align-items: center;
+    border-right: none !important;
+    border-bottom: 1px solid #e3e7ea;
+    overflow-x: auto;
+    padding: 10px 14px !important;
+    gap: 6px;
+    position: static !important;
+  }
+  #sidebar .brandblock {
+    margin: 0 8px 0 0 !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+  #sidebar .navgroup {
+    flex-direction: row !important;
+    flex: 1;
+  }
+  #sidebar .sidefoot {
+    display: none !important;
+  }
+}

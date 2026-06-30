@@ -1,0 +1,10 @@
+import { RelayProvider } from "@/lib/store";
+import { Shell } from "@/components/Shell";
+
+export default function Page() {
+  return (
+    <RelayProvider>
+      <Shell />
+    </RelayProvider>
+  );
+}

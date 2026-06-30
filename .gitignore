@@ -1,0 +1,26 @@
+# Root .gitignore for the Relay trial project.
+# The application lives in relay/ and has its own .gitignore as well.
+
+# ---- OS / editor junk ----
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+.idea
+.vscode/*
+!.vscode/extensions.json
+
+# ---- secrets ----
+.env
+.env*.local
+
+# ---- provided reference assets (large binaries, not source) ----
+# Sample voice notes and design exports used for local testing only.
+Resources/
+
+# ---- safety net: ignore any stray dependency / build output anywhere ----
+**/node_modules/
+**/.next/
+**/out/
+**/coverage/
+*.tsbuildinfo
