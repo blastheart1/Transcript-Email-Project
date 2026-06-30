@@ -28,13 +28,26 @@ function tidyAssumptions(rows: Assumption[]): Assumption[] {
   );
 }
 
+const WEAK_SUBJECTS = new Set(["", "draft", "email", "subject", "note", "untitled"]);
+
+/** Guarantee a usable subject even if the model returns nothing/weak. */
+export function ensureSubject(raw: Partial<DraftResponse>): string {
+  const s = (raw.subject || "").trim();
+  if (s.length > 3 && !WEAK_SUBJECTS.has(s.toLowerCase())) return s;
+  const type = raw.type ?? "Note";
+  const person = (raw.person || "").trim();
+  if (type === "Intro") return person ? `Intro: ${person}` : "Quick introduction";
+  if (person) return `${type} for ${person}`;
+  return type === "Reply" ? "Re: your note" : "Quick note";
+}
+
 /** Normalize a raw model object into a clean DraftResponse. Exported for tests. */
-export function normalizeDraft(raw: Partial<DraftResponse>, fallbackSubject = "Draft"): DraftResponse {
+export function normalizeDraft(raw: Partial<DraftResponse>): DraftResponse {
   return {
     type: raw.type ?? "Note",
     person: raw.person || "",
     toEmail: raw.toEmail || "",
-    subject: raw.subject || fallbackSubject,
+    subject: ensureSubject(raw),
     paragraphs: (raw.paragraphs || []).map(tidySegments),
     assumptions: tidyAssumptions(raw.assumptions || []),
   };

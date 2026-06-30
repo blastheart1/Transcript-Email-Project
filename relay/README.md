@@ -11,10 +11,16 @@ Tailwind** application with a real capture → transcribe → draft → review �
 ## Quick start
 
 ```bash
-cp .env.example .env.local      # add your OPENAI_API_KEY
+cp .env.example .env.local      # add OPENAI_API_KEY, DATABASE_URL(_UNPOOLED), AUTH_SECRET
 npm install
+npm run db:migrate              # create tables in Neon Postgres
+npm run db:seed                 # seed style samples, settings, a user, and the 3 P1 drafts
 npm run dev                     # http://localhost:8882
 ```
+
+You'll land on a **login screen**. Sign in with the seeded account
+(`connor@mindmaven.com` / `relay-demo-2026`), **Continue with Google** (set
+`AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET` first), or **Skip** to use it as a guest.
 
 One `OPENAI_API_KEY` powers both steps:
 
@@ -126,6 +132,22 @@ relay/
   talks to `/api/*` and never sees the key.
 - **Webhook** capture is intentionally left as "Coming soon," matching the prototype.
 
+## Accounts, data & automation
+
+- **Persistence:** notes, style samples, and settings live in **Neon Postgres** via
+  Drizzle ORM (`lib/db/`). The inbox is shared (single workspace); it refetches on focus
+  and polls every 15s so webhook-ingested drafts appear automatically.
+- **Auth:** Auth.js v5 — email/password (bcrypt, seeded user), Google OAuth (open), and a
+  guest "Skip". `middleware.ts` gates pages (→ `/login`) and APIs (→ 401); `/api/ingest`,
+  `/api/auth/*`, `/api/providers` stay public.
+- **Seeded P1 drafts:** the three sample voice notes are drafted and stored as inbox
+  entries (`lib/seedData.ts`, regenerated from the pipeline) — Part 1, done.
+- **Webhook management (Settings → Webhook & automation):** copy the endpoint, toggle it
+  on/off, set/rotate a shared secret, and test connectivity. `/api/ingest` honors these,
+  then persists the draft so it lands in the inbox. Pair with a Zapier *Google Drive →
+  Webhooks* zap (POST `{ "audioUrl": "…" }`).
+- **Recipients:** every draft has editable **To / CC / BCC**; the mailto carries all three.
+
 ## Scripts & testing
 
 ```bash
@@ -133,9 +155,13 @@ npm run dev        # local dev
 npm run build      # production build (also type-checks + lints)
 npm run start      # serve the production build
 npm run lint       # eslint
-npm test           # vitest unit tests (format, prompts, email HTML, draft engine, models)
-npm run test:real  # END-TO-END: uploads Resources/Sample Voicenotes/*.m4a to the
-                   # running app and validates transcribe → draft + guardrails
+npm test           # vitest unit tests (format, prompts, email HTML, draft engine, models, transcribe)
+npm run test:real  # END-TO-END: uploads Resources/Sample Voicenotes/*.m4a, validates
+                   # transcribe → draft + guardrails, and webhook ingest → DB persistence
+npm run db:generate  # generate a Drizzle migration from lib/db/schema.ts
+npm run db:migrate   # apply migrations to Neon
+npm run db:seed      # idempotent seed (style samples, settings, user, P1 drafts)
+npm run db:studio    # browse the database
 ```
 
 The validation loop for any pipeline change is **build → `npm test` → `npm run test:real`**.

@@ -2,6 +2,13 @@
 
 export type NoteStatus = "transcribing" | "ready" | "sent" | "error";
 
+/** A persisted style sample (id + the StyleSample fields from constants). */
+export interface StyleSampleRecord {
+  id: string;
+  title: string;
+  body: string;
+}
+
 export type NoteType = "Follow-up" | "Intro" | "Reply" | "Note";
 
 export type Tone = "Warm" | "Neutral" | "Direct";
@@ -41,6 +48,9 @@ export interface Note {
   duration: string;
   transcript: string;
   toEmail: string;
+  /** Optional CC / BCC recipients — comma-separated, user-managed. */
+  cc?: string;
+  bcc?: string;
   /** Original recording, kept client-side as an object URL when available. */
   audioURL?: string | null;
   segments?: TranscriptSegment[];
@@ -49,6 +59,9 @@ export interface Note {
   assumptions: Assumption[];
   tone?: Tone;
   length?: Length;
+  /** Which model/provider produced the current draft (for display). */
+  model?: string;
+  provider?: string;
   errorMessage?: string;
 }
 

@@ -54,7 +54,7 @@ OUTPUT FORMAT — return a single JSON object matching the provided schema:
 - "type": one of "Follow-up", "Intro", "Reply", "Note" — classify the email.
 - "person": the recipient's first name or full name as dictated (e.g. "Marcus Bell"). If unclear, "".
 - "toEmail": recipient email ONLY if explicitly dictated, else "".
-- "subject": a short, specific subject line in ${req.senderName}'s style.
+- "subject": a short, specific subject line (≈3–8 words) in ${req.senderName}'s style. NEVER leave it blank and never use a generic placeholder like "Email", "Draft", or "Follow-up" alone — summarize the actual ask (e.g. "Onboarding frameworks for your team").
 - "paragraphs": the email body as an array of paragraphs. Each paragraph is an array of runs. Each run is { "t": text } for normal text, or { "t": text, "flagged": true, "tip": "what to confirm" } for an inferred/placeholder span. The greeting is its own first paragraph; the sign-off is its own last paragraph. Split runs so that ONLY the inferred words are flagged, not whole sentences.
 - "assumptions": 2–6 short lines for the "What Relay changed & assumed" panel. Use flagged:true (with a tip) for anything ${req.senderName} should verify (guessed dates, placeholder links, blank recipient), and flagged:false for routine cleanups (greeting choice, filler removal, structure).
 

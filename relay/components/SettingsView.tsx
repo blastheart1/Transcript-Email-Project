@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRelay } from "@/lib/store";
 import { GUARDRAILS, SENDER, DEFAULT_SIGN_OFF } from "@/lib/constants";
 import { FileIcon, ShieldIcon, BookmarkIcon, MailIcon, CheckIcon, CloseIcon } from "./icons";
+import { WebhookSettings } from "./WebhookSettings";
 
 export function SettingsView() {
   const { state, addStyleSample, removeStyleSample, showToast } = useRelay();
@@ -58,7 +59,7 @@ export function SettingsView() {
                   <span className="text-xs font-semibold text-success">Learned</span>
                   <button
                     onClick={() => {
-                      removeStyleSample(i);
+                      void removeStyleSample(s.id);
                       if (open) setExpanded(null);
                     }}
                     aria-label={`Remove ${s.title}`}
@@ -242,6 +243,9 @@ export function SettingsView() {
           </button>
         </div>
       </div>
+
+      {/* Webhook & automation */}
+      <WebhookSettings />
     </section>
   );
 }

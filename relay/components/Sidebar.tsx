@@ -1,8 +1,8 @@
 "use client";
 
 import { useRelay } from "@/lib/store";
-import { SENDER } from "@/lib/constants";
 import { MicIcon, InboxIcon, SettingsIcon, HelpIcon } from "./icons";
+import { UserMenu, type SessionUser } from "./UserMenu";
 
 function navClass(active: boolean) {
   return [
@@ -11,7 +11,7 @@ function navClass(active: boolean) {
   ].join(" ");
 }
 
-export function Sidebar() {
+export function Sidebar({ user }: { user: SessionUser | null }) {
   const { state, setView, openGuide } = useRelay();
   const readyCount = state.notes.filter((n) => n.status === "ready").length;
   const inboxActive = state.view === "inbox";
@@ -78,15 +78,7 @@ export function Sidebar() {
           <HelpIcon size={16} />
           Quick start guide
         </button>
-        <div className="mt-3 flex items-center gap-[9px] px-1">
-          <div className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-[#DCE6E8] text-xs font-bold text-primary">
-            {SENDER.initials}
-          </div>
-          <div className="min-w-0">
-            <div className="truncate text-[12.5px] font-semibold">{SENDER.fullName}</div>
-            <div className="truncate text-[11px] text-muted">{SENDER.role}</div>
-          </div>
-        </div>
+        <UserMenu user={user} />
       </div>
     </aside>
   );

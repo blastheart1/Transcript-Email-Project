@@ -1,11 +1,26 @@
 import { describe, it, expect } from "vitest";
-import { normalizeDraft } from "../lib/draftEngine";
+import { normalizeDraft, ensureSubject } from "../lib/draftEngine";
+
+describe("ensureSubject", () => {
+  it("keeps a good subject", () => {
+    expect(ensureSubject({ subject: "Onboarding frameworks for your team" })).toBe(
+      "Onboarding frameworks for your team",
+    );
+  });
+  it("replaces blank or weak subjects", () => {
+    expect(ensureSubject({ subject: "", type: "Reply" })).toBe("Re: your note");
+    expect(ensureSubject({ subject: "Draft", type: "Follow-up", person: "Marcus" })).toBe(
+      "Follow-up for Marcus",
+    );
+    expect(ensureSubject({ subject: "Email", type: "Intro", person: "Andre" })).toBe("Intro: Andre");
+  });
+});
 
 describe("normalizeDraft", () => {
   it("fills sensible defaults for a sparse object", () => {
     const out = normalizeDraft({});
     expect(out.type).toBe("Note");
-    expect(out.subject).toBe("Draft");
+    expect(out.subject).toBe("Quick note");
     expect(out.person).toBe("");
     expect(out.toEmail).toBe("");
     expect(out.paragraphs).toEqual([]);

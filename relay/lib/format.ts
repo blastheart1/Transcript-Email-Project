@@ -5,12 +5,13 @@ export function bodyText(note: Pick<Note, "paragraphs">): string {
   return note.paragraphs.map((p) => p.map((s) => s.t).join("")).join("\n\n");
 }
 
-/** Build a mailto: URL for the "Open in email" action. */
-export function buildMailto(note: Pick<Note, "toEmail" | "subject" | "paragraphs">): string {
-  const params = new URLSearchParams({
-    subject: note.subject,
-    body: bodyText(note),
-  });
+/** Build a mailto: URL for the "Open in email" action (incl. CC/BCC). */
+export function buildMailto(note: Pick<Note, "toEmail" | "subject" | "paragraphs" | "cc" | "bcc">): string {
+  const params = new URLSearchParams();
+  if (note.cc) params.set("cc", note.cc);
+  if (note.bcc) params.set("bcc", note.bcc);
+  params.set("subject", note.subject);
+  params.set("body", bodyText(note));
   return `mailto:${note.toEmail || ""}?${params.toString()}`;
 }
 

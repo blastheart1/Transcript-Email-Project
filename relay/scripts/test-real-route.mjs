@@ -37,11 +37,14 @@ async function reachable() {
   }
 }
 
+// Guest cookie mirrors how a "Skip"-mode user reaches the gated API routes.
+const GUEST = { Cookie: "relay_guest=1" };
+
 async function transcribe(path) {
   const buf = readFileSync(path);
   const fd = new FormData();
   fd.append("audio", new Blob([buf], { type: "audio/m4a" }), basename(path));
-  const r = await fetch(`${BASE}/api/transcribe`, { method: "POST", body: fd });
+  const r = await fetch(`${BASE}/api/transcribe`, { method: "POST", body: fd, headers: GUEST });
   const json = await r.json();
   if (!r.ok) throw new Error(`transcribe ${r.status}: ${json.error || "unknown"}`);
   return json;
@@ -50,7 +53,7 @@ async function transcribe(path) {
 async function draft(transcript, segments) {
   const r = await fetch(`${BASE}/api/draft`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...GUEST },
     body: JSON.stringify({
       transcript,
       segments,
@@ -111,6 +114,27 @@ async function run() {
     }
     console.log("");
   }
+
+  // Webhook ingest → DB persistence
+  console.log("▶ webhook ingest → persistence");
+  try {
+    const path = resolve(SAMPLE_DIR, FILES[0]);
+    const buf = readFileSync(path);
+    const fd = new FormData();
+    fd.append("audio", new Blob([buf], { type: "audio/m4a" }), basename(path));
+    const ing = await fetch(`${BASE}/api/ingest`, { method: "POST", body: fd });
+    const ingJson = await ing.json();
+    assert(ing.ok && !!ingJson.noteId, `ingest created a note (id=${ingJson.noteId})`);
+    assert(typeof ingJson.emailHtml === "string" && ingJson.emailHtml.includes("<!DOCTYPE"), "ingest returned HTML email");
+
+    const listRes = await fetch(`${BASE}/api/notes`, { headers: GUEST });
+    const { notes } = await listRes.json();
+    assert(Array.isArray(notes) && notes.some((n) => n.id === ingJson.noteId), "ingested note is in /api/notes");
+    assert(notes.some((n) => n.source === "seed" || n.id?.startsWith("seed-")), "seeded P1 notes present");
+  } catch (err) {
+    assert(false, `ingest/persistence error: ${err.message}`);
+  }
+  console.log("");
 
   console.log(failures === 0 ? "All real-route checks passed ✓" : `${failures} check(s) failed ✗`);
   process.exit(failures === 0 ? 0 : 1);

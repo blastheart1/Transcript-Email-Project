@@ -41,11 +41,12 @@ function pillClass(active: boolean) {
 }
 
 export function DraftView() {
-  const { state, dispatch, currentNote, setView, regenerate, showToast } = useRelay();
+  const { state, dispatch, currentNote, setView, regenerate, saveNote, showToast } = useRelay();
   const note = currentNote();
   const [editText, setEditText] = useState("");
   const [bodyView, setBodyView] = useState<"review" | "html">("review");
   const [copiedHtml, setCopiedHtml] = useState(false);
+  const [showBcc, setShowBcc] = useState(false);
 
   useEffect(() => {
     if (state.editing && note) setEditText(bodyText(note));
@@ -74,7 +75,7 @@ export function DraftView() {
 
   function commitEdit() {
     if (state.editing) {
-      dispatch({ type: "UPDATE_NOTE", id: note!.id, patch: { paragraphs: textToParagraphs(editText) } });
+      void saveNote(note!.id, { paragraphs: textToParagraphs(editText) });
     }
     dispatch({ type: "SET_EDITING", editing: !state.editing });
   }
@@ -108,7 +109,7 @@ export function DraftView() {
   }
 
   function markSent() {
-    dispatch({ type: "UPDATE_NOTE", id: note!.id, patch: { status: "sent", received: "Just now" } });
+    void saveNote(note!.id, { status: "sent", received: "Just now" });
     showToast({ kind: "ready", msg: "Opening your email client…" });
   }
 
@@ -292,12 +293,52 @@ export function DraftView() {
                     type="text"
                     value={note.toEmail}
                     onChange={(e) => dispatch({ type: "UPDATE_NOTE", id: note.id, patch: { toEmail: e.target.value } })}
+                    onBlur={(e) => saveNote(note.id, { toEmail: e.target.value })}
                     placeholder="Add recipient email"
                     aria-label="Recipient email"
                     className="flex-1 border-none bg-transparent py-0.5 text-sm font-medium"
                     data-tip={note.toEmail ? undefined : "Address wasn’t in the voice note — add it before sending"}
                   />
+                  {!showBcc && (
+                    <button
+                      onClick={() => setShowBcc(true)}
+                      className="flex-none cursor-pointer border-none bg-transparent text-xs font-semibold text-primary"
+                      data-tip="Add a BCC line"
+                    >
+                      + BCC
+                    </button>
+                  )}
                 </div>
+                <div className="h-px bg-line-faint" />
+                <div className="flex items-center gap-2.5">
+                  <span className="w-[52px] flex-none text-xs font-semibold text-muted">CC</span>
+                  <input
+                    type="text"
+                    value={note.cc || ""}
+                    onChange={(e) => dispatch({ type: "UPDATE_NOTE", id: note.id, patch: { cc: e.target.value } })}
+                    onBlur={(e) => saveNote(note.id, { cc: e.target.value })}
+                    placeholder="Optional — comma-separated"
+                    aria-label="CC recipients"
+                    className="flex-1 border-none bg-transparent py-0.5 text-sm font-medium"
+                  />
+                </div>
+                {showBcc && (
+                  <>
+                    <div className="h-px bg-line-faint" />
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-[52px] flex-none text-xs font-semibold text-muted">BCC</span>
+                      <input
+                        type="text"
+                        value={note.bcc || ""}
+                        onChange={(e) => dispatch({ type: "UPDATE_NOTE", id: note.id, patch: { bcc: e.target.value } })}
+                        onBlur={(e) => saveNote(note.id, { bcc: e.target.value })}
+                        placeholder="Optional — comma-separated"
+                        aria-label="BCC recipients"
+                        className="flex-1 border-none bg-transparent py-0.5 text-sm font-medium"
+                      />
+                    </div>
+                  </>
+                )}
                 <div className="h-px bg-line-faint" />
                 <div className="flex items-center gap-2.5">
                   <span className="w-[52px] flex-none text-xs font-semibold text-muted">Subject</span>
@@ -305,6 +346,7 @@ export function DraftView() {
                     type="text"
                     value={note.subject}
                     onChange={(e) => dispatch({ type: "UPDATE_NOTE", id: note.id, patch: { subject: e.target.value } })}
+                    onBlur={(e) => saveNote(note.id, { subject: e.target.value })}
                     aria-label="Email subject"
                     className="flex-1 border-none bg-transparent py-0.5 text-sm font-semibold"
                   />

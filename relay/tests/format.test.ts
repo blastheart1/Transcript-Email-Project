@@ -29,6 +29,16 @@ describe("buildMailto", () => {
   it("leaves the recipient blank when none is set", () => {
     expect(buildMailto({ ...note, toEmail: "" }).startsWith("mailto:?")).toBe(true);
   });
+  it("includes cc and bcc when present", () => {
+    const url = buildMailto({ ...note, cc: "a@x.co,b@x.co", bcc: "c@x.co" });
+    expect(url).toContain("cc=a%40x.co%2Cb%40x.co");
+    expect(url).toContain("bcc=c%40x.co");
+  });
+  it("omits cc/bcc params when empty", () => {
+    const url = buildMailto({ ...note, cc: "", bcc: "" });
+    expect(url).not.toContain("cc=");
+    expect(url).not.toContain("bcc=");
+  });
 });
 
 describe("textToParagraphs", () => {

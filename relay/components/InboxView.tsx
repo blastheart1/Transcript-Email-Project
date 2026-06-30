@@ -72,7 +72,7 @@ export function InboxView() {
       <div className="overflow-hidden rounded-xl border border-line bg-white">
         {rows.length === 0 && (
           <div className="px-5 py-12 text-center text-sm text-muted">
-            No voice notes match your search.
+            {state.loading ? "Loading your voice notes…" : "No voice notes match your search."}
           </div>
         )}
         {rows.map((note) => {

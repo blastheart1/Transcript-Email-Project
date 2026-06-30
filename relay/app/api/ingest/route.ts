@@ -4,6 +4,9 @@ import { generateDraft } from "@/lib/draftEngine";
 import { buildEmailHtml } from "@/lib/emailHtml";
 import { bodyText } from "@/lib/format";
 import { STYLE_SAMPLES, DEFAULT_SIGN_OFF, DEFAULT_TONE, DEFAULT_LENGTH, SENDER } from "@/lib/constants";
+import { getSettings } from "@/lib/db/settings.repo";
+import { listStyleSamples } from "@/lib/db/style-samples.repo";
+import { createNote } from "@/lib/db/notes.repo";
 import type { Note, Tone, Length } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -13,10 +16,10 @@ const isTone = (v: unknown): v is Tone => v === "Warm" || v === "Neutral" || v =
 const isLength = (v: unknown): v is Length =>
   v === "Concise" || v === "Standard" || v === "Detailed";
 
-/** Optional shared-secret guard for the public webhook. */
-function authorized(request: Request, url: URL): boolean {
-  const secret = process.env.RELAY_INGEST_SECRET;
-  if (!secret) return true; // open in dev / when unset
+/** Shared-secret guard: DB secret takes precedence, env var is a fallback. */
+function authorized(request: Request, url: URL, dbSecret: string | null): boolean {
+  const secret = dbSecret || process.env.RELAY_INGEST_SECRET || "";
+  if (!secret) return true; // open when no secret configured
   const provided = request.headers.get("x-relay-secret") || url.searchParams.get("secret");
   return provided === secret;
 }
@@ -24,18 +27,31 @@ function authorized(request: Request, url: URL): boolean {
 /**
  * Webhook ingest — the end-to-end automation entry point.
  *
- * Accepts EITHER:
- *   • multipart/form-data with an `audio` file (+ optional tone/length/model), or
- *   • application/json: { audioUrl, fileName?, tone?, length?, model? }
- *
- * Runs Whisper → drafting and returns the transcript, structured draft, and a
- * ready-to-send HTML email. Designed for a Zapier "Webhooks by Zapier" POST step
- * triggered by a new recording in a Google Drive folder.
+ * Accepts EITHER multipart/form-data with an `audio` file, OR JSON
+ * { audioUrl, fileName?, tone?, length?, model? }. Also accepts a JSON
+ * { ping: true } connectivity check. Runs Whisper → drafting, PERSISTS the draft
+ * as an inbox note, and returns the transcript, structured draft, and HTML email.
+ * Designed for a Zapier "Webhooks by Zapier" POST triggered by a new Google Drive file.
  */
 export async function POST(request: Request) {
   const url = new URL(request.url);
-  if (!authorized(request, url)) {
+
+  // Settings gate (enabled + secret) — managed from the app's Settings screen.
+  let dbSecret: string | null = null;
+  let enabled = true;
+  try {
+    const settings = await getSettings();
+    dbSecret = settings.webhookSecret;
+    enabled = settings.webhookEnabled;
+  } catch {
+    /* if settings can't load, fall back to env-secret behavior */
+  }
+
+  if (!authorized(request, url, dbSecret)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+  if (!enabled) {
+    return NextResponse.json({ error: "Webhook is disabled." }, { status: 403 });
   }
 
   try {
@@ -64,12 +80,16 @@ export async function POST(request: Request) {
       if (typeof m === "string") model = m;
     } else {
       const json = (await request.json().catch(() => ({}))) as {
+        ping?: boolean;
         audioUrl?: string;
         fileName?: string;
         tone?: unknown;
         length?: unknown;
         model?: unknown;
       };
+      if (json.ping) {
+        return NextResponse.json({ ok: true, enabled, secured: !!dbSecret });
+      }
       if (!json.audioUrl) {
         return NextResponse.json(
           { error: "Provide `audioUrl` (JSON) or an `audio` file (multipart)." },
@@ -101,22 +121,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Transcription produced no text." }, { status: 422 });
     }
 
-    // 2) Draft (OpenAI primary, Anthropic fallback)
+    // 2) Draft (DB style samples if present, else built-in references)
+    const dbStyles = await listStyleSamples().catch(() => []);
+    const styleSamples = dbStyles.length ? dbStyles.map((s) => s.body) : STYLE_SAMPLES.map((s) => s.body);
     const draft = await generateDraft({
       transcript: t.transcript,
       segments: t.segments,
       tone,
       length,
-      styleSamples: STYLE_SAMPLES.map((s) => s.body),
+      styleSamples,
       signOff: DEFAULT_SIGN_OFF,
       senderName: SENDER.name,
       model,
     });
 
-    // 3) Render the send-ready email
-    const note: Note = {
-      id: "ingest",
-      person: draft.person || "",
+    // 3) Persist as an inbox note so it surfaces in the app
+    const saved = await createNote({
+      person: draft.person || "New recipient",
       type: draft.type,
       subject: draft.subject,
       status: "ready",
@@ -127,9 +148,18 @@ export async function POST(request: Request) {
       segments: t.segments,
       paragraphs: draft.paragraphs,
       assumptions: draft.assumptions,
-    };
+      tone,
+      length,
+      model: draft.model,
+      provider: draft.provider,
+      source: "webhook",
+    });
+
+    // 4) Render the send-ready email
+    const note: Note = { ...saved };
 
     return NextResponse.json({
+      noteId: saved.id,
       transcript: t.transcript,
       duration: t.duration,
       segments: t.segments,
