@@ -23,7 +23,11 @@ function matches(note: Note, q: string, filter: InboxFilter) {
     if (!archived) return false;
   } else {
     if (archived) return false;
-    if (filter === "drafts" && !(note.status === "ready" || note.status === "transcribing")) return false;
+    if (
+      filter === "drafts" &&
+      !(note.status === "ready" || note.status === "transcribing" || note.status === "needs_review")
+    )
+      return false;
     if (filter === "sent" && note.status !== "sent") return false;
   }
   if (!q) return true;

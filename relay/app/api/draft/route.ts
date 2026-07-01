@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateDraft } from "@/lib/draftEngine";
+import { runDraftPipeline } from "@/lib/pipeline";
 import type { DraftRequest } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -31,8 +31,15 @@ export async function POST(request: Request) {
       model: typeof body.model === "string" ? body.model : undefined,
     };
 
-    const draft = await generateDraft(req);
-    return NextResponse.json(draft);
+    const result = await runDraftPipeline(req);
+    // Flatten so existing clients keep working, plus verdict + status.
+    return NextResponse.json({
+      ...result.draft,
+      provider: result.provider,
+      model: result.model,
+      verdict: result.verdict,
+      status: result.status,
+    });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Drafting failed.";
     const status = /API_KEY|provider configured/.test(message) ? 500 : 502;

@@ -27,6 +27,14 @@ export function statusInfo(status: NoteStatus): StatusInfo {
         badgeColor: "#8A6516",
         tip: "Audio is still being transcribed",
       };
+    case "needs_review":
+      return {
+        label: "Needs review",
+        dot: "#C0392B",
+        badgeBg: "#FBF3E2",
+        badgeColor: "#8A6516",
+        tip: "The faithfulness audit flagged unverified claims — check before sending",
+      };
     case "error":
       return {
         label: "Needs attention",

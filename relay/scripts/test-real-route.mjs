@@ -107,8 +107,12 @@ async function run() {
       assert(["Follow-up", "Intro", "Reply", "Note"].includes(d.type), `type classified (${d.type})`);
       const body = flatBody(d);
       assert(/thanks,?\s*\n?connor/i.test(body), "sign-off present (Thanks, Connor)");
+      assert(!!d.verdict && typeof d.verdict.faithful === "boolean", "faithfulness verdict present");
+      assert(["ready", "needs_review"].includes(d.status), `pipeline status (${d.status})`);
       const flaggedRuns = d.paragraphs.flat().filter((s) => s.flagged).length;
-      console.log(`     provider=${d.provider} model=${d.model} type=${d.type} flagged-spans=${flaggedRuns} flagged-assumptions=${d.assumptions.filter((a) => a.flagged).length}`);
+      const v = d.verdict || {};
+      console.log(`     provider=${d.provider} model=${d.model} type=${d.type} status=${d.status}`);
+      console.log(`     audit: faithful=${v.faithful} by=${v.auditorModel || "-"} repaired=${!!v.repaired} fabrications=${(v.fabrications || []).length} omissions=${(v.omissions || []).length} style=${Math.round((v.styleScore ?? 0) * 100)}%`);
     } catch (err) {
       assert(false, `pipeline error: ${err.message}`);
     }

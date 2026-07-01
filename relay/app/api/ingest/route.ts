@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { transcribeAudio, MAX_AUDIO_BYTES } from "@/lib/transcribe";
-import { generateDraft } from "@/lib/draftEngine";
+import { runDraftPipeline } from "@/lib/pipeline";
 import { buildEmailHtml } from "@/lib/emailHtml";
 import { bodyText } from "@/lib/format";
 import { STYLE_SAMPLES, DEFAULT_SIGN_OFF, DEFAULT_TONE, DEFAULT_LENGTH, SENDER } from "@/lib/constants";
@@ -121,10 +121,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Transcription produced no text." }, { status: 422 });
     }
 
-    // 2) Draft (DB style samples if present, else built-in references)
+    // 2) Draft + faithfulness pipeline (DB style samples if present)
     const dbStyles = await listStyleSamples().catch(() => []);
     const styleSamples = dbStyles.length ? dbStyles.map((s) => s.body) : STYLE_SAMPLES.map((s) => s.body);
-    const draft = await generateDraft({
+    const result = await runDraftPipeline({
       transcript: t.transcript,
       segments: t.segments,
       tone,
@@ -134,13 +134,14 @@ export async function POST(request: Request) {
       senderName: SENDER.name,
       model,
     });
+    const draft = result.draft;
 
     // 3) Persist as an inbox note so it surfaces in the app
     const saved = await createNote({
       person: draft.person || "New recipient",
       type: draft.type,
       subject: draft.subject,
-      status: "ready",
+      status: result.status,
       received: "Just now",
       duration: t.duration,
       transcript: t.transcript,
@@ -150,8 +151,9 @@ export async function POST(request: Request) {
       assumptions: draft.assumptions,
       tone,
       length,
-      model: draft.model,
-      provider: draft.provider,
+      model: result.model,
+      provider: result.provider,
+      verdict: result.verdict,
       source: "webhook",
     });
 
@@ -160,12 +162,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       noteId: saved.id,
+      status: result.status,
+      verdict: result.verdict,
       transcript: t.transcript,
       duration: t.duration,
       segments: t.segments,
       draft: {
-        provider: draft.provider,
-        model: draft.model,
+        provider: result.provider,
+        model: result.model,
         type: draft.type,
         person: draft.person,
         toEmail: draft.toEmail,

@@ -1,6 +1,31 @@
 // Core domain types for Relay, shared between client and API routes.
 
-export type NoteStatus = "transcribing" | "ready" | "sent" | "error";
+export type NoteStatus = "transcribing" | "ready" | "sent" | "error" | "needs_review";
+
+export type Severity = "high" | "medium" | "low";
+
+/** A claim/entity in the draft not supported by the transcript. */
+export interface Fabrication {
+  text: string;
+  severity: Severity;
+  why: string;
+}
+
+/** Result of the faithfulness audit (deterministic checks + cross-model auditor). */
+export interface Verdict {
+  faithful: boolean;
+  meaningPreserved: boolean;
+  fabrications: Fabrication[];
+  omissions: string[];
+  /** Inferred spans that should have been flagged but weren't. */
+  unflaggedGuesses: string[];
+  styleScore: number; // 0..1
+  styleNotes: string;
+  auditorProvider?: string;
+  auditorModel?: string;
+  /** True if a stricter repair pass ran before this verdict. */
+  repaired?: boolean;
+}
 
 /** A persisted style sample (id + the StyleSample fields from constants). */
 export interface StyleSampleRecord {
@@ -62,6 +87,8 @@ export interface Note {
   /** Which model/provider produced the current draft (for display). */
   model?: string;
   provider?: string;
+  /** Faithfulness audit result, stored with the note. */
+  verdict?: Verdict;
   /** Hidden from the default inbox when true. */
   archived?: boolean;
   errorMessage?: string;
@@ -87,6 +114,12 @@ export interface DraftRequest {
   senderName: string;
   /** Optional user-selected model id (e.g. "gpt-4o", "claude-sonnet-4-6"). */
   model?: string;
+  /** When present, this is a stricter repair pass targeting prior audit findings. */
+  repair?: {
+    fabrications: string[];
+    omissions: string[];
+    unflaggedGuesses: string[];
+  };
 }
 
 export interface DraftResponse {

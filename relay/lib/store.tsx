@@ -16,6 +16,8 @@ import type {
   TranscribeResponse,
   DraftResponse,
   StyleSampleRecord,
+  Verdict,
+  NoteStatus,
 } from "./types";
 import { DEFAULT_SIGN_OFF, DEFAULT_TONE, DEFAULT_LENGTH, SENDER } from "./constants";
 import { DEFAULT_MODEL_ID } from "./models";
@@ -324,7 +326,7 @@ export function RelayProvider({ children }: { children: ReactNode }) {
 
   const draftFor = useCallback(
     async (transcript: string, segments: Note["segments"], tone: Tone, length: Length, model: string) => {
-      return api<DraftResponse & { provider?: string; model?: string }>("/api/draft", {
+      return api<DraftResponse & { provider?: string; model?: string; verdict?: Verdict; status?: NoteStatus }>("/api/draft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -385,8 +387,9 @@ export function RelayProvider({ children }: { children: ReactNode }) {
         await saveNote(id, { transcript: t.transcript, duration: t.duration, segments: t.segments });
 
         const draft = await draftFor(t.transcript, t.segments, state.tone, state.length, state.model);
+        const status = draft.status ?? "ready";
         await saveNote(id, {
-          status: "ready",
+          status,
           type: draft.type,
           person: draft.person || "New recipient",
           subject: draft.subject || nice,
@@ -397,8 +400,13 @@ export function RelayProvider({ children }: { children: ReactNode }) {
           length: state.length,
           model: draft.model,
           provider: draft.provider,
+          verdict: draft.verdict,
         });
-        showToast({ kind: "ready", msg: `“${draft.subject || nice}” is drafted and ready to review.` });
+        showToast(
+          status === "needs_review"
+            ? { kind: "info", msg: `“${draft.subject || nice}” drafted — needs a quick review.` }
+            : { kind: "ready", msg: `“${draft.subject || nice}” is drafted and ready to review.` },
+        );
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Something went wrong.";
         await saveNote(id, { status: "error", errorMessage: msg });
@@ -418,6 +426,7 @@ export function RelayProvider({ children }: { children: ReactNode }) {
       try {
         const draft = await draftFor(note.transcript, note.segments, state.tone, state.length, state.model);
         await saveNote(noteId, {
+          status: draft.status ?? "ready",
           type: draft.type,
           subject: draft.subject || note.subject,
           toEmail: note.toEmail || draft.toEmail,
@@ -427,6 +436,7 @@ export function RelayProvider({ children }: { children: ReactNode }) {
           length: state.length,
           model: draft.model,
           provider: draft.provider,
+          verdict: draft.verdict,
         });
       } catch (err) {
         showToast({ kind: "error", msg: err instanceof Error ? err.message : "Couldn't regenerate." }, 5000);

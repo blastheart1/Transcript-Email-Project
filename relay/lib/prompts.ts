@@ -66,8 +66,89 @@ export function buildUserPrompt(req: DraftRequest): string {
     req.segments && req.segments.length
       ? req.segments.map((s) => `[${s.time}] ${s.text}`).join("\n")
       : req.transcript;
-  return `Here is the voice note transcript. Draft the email per the guardrails.\n\n${seg}`;
+  const base = `Here is the voice note transcript. Draft the email per the guardrails.\n\n${seg}`;
+  if (!req.repair) return base;
+
+  const list = (items: string[]) => (items.length ? items.map((x) => `- ${x}`).join("\n") : "- (none)");
+  return `${base}
+
+IMPORTANT — THIS IS A REVISION. A faithfulness audit found problems in the previous draft. The transcript above is the ONLY source of truth. Fix these precisely and introduce NO new facts:
+
+REMOVE or correct these unsupported claims (they are NOT in the transcript):
+${list(req.repair.fabrications)}
+
+MARK these inferred spans as flagged guesses (flagged:true with a tip) — do not state them as plain fact:
+${list(req.repair.unflaggedGuesses)}
+
+RESTORE these substantive points that were dropped:
+${list(req.repair.omissions)}
+
+If any detail is not clearly in the transcript, leave it out or flag it. Do not invent replacements.`;
 }
+
+// ---- Faithfulness audit (independent verification pass) ----
+
+export function buildAuditSystemPrompt(senderName: string, styleSamples: string[]): string {
+  const samples = styleSamples.map((s, i) => `--- STYLE SAMPLE ${i + 1} ---\n${s}`).join("\n\n");
+  return `You are a strict fact-checker and editor. You audit an email draft against the SOURCE TRANSCRIPT it was generated from. The transcript is the ONLY source of truth. Be skeptical and literal — your job is to catch anything the draft added, changed, or dropped.
+
+Report, as structured JSON:
+- "fabrications": any content in the draft NOT supported by the transcript — invented names, dates, times, links, email addresses, phone numbers, amounts, commitments, or factual claims. Severity:
+  • "high" = a concrete invented fact (a specific date/time presented as certain, an email, a link/URL, a phone number, a number, or a promise/commitment not in the note).
+  • "medium" = meaning shifted, softened, or embellished beyond what was said.
+  • "low" = minor stylistic drift.
+  Resolving a vague phrase into a concrete guess (e.g. "next week" → "next Tuesday") is a fabrication UNLESS the draft already marks it as an inferred guess.
+- "omissions": substantive points present in the transcript but missing from the draft.
+- "unflaggedGuesses": inferred/assumed spans that a reviewer should double-check but which appear as plain, confident text.
+- "meaningPreserved": true only if the draft faithfully conveys the speaker's intent.
+- "faithful": true only if there are NO high-severity fabrications.
+- "styleScore": 0.0–1.0, how well the draft matches ${senderName}'s voice in the samples below (greeting, warmth, rhythm, sign-off).
+- "styleNotes": one short line on tone/style fit.
+
+${senderName}'s style samples (the target voice):
+${samples}
+
+Do not be lenient. Return ONLY the JSON object.`;
+}
+
+export function buildAuditUserPrompt(transcript: string, draftText: string): string {
+  return `SOURCE TRANSCRIPT (ground truth):\n"""\n${transcript}\n"""\n\nDRAFTED EMAIL to audit:\n"""\n${draftText}\n"""\n\nAudit the draft against the transcript now.`;
+}
+
+export const VERDICT_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "faithful",
+    "meaningPreserved",
+    "fabrications",
+    "omissions",
+    "unflaggedGuesses",
+    "styleScore",
+    "styleNotes",
+  ],
+  properties: {
+    faithful: { type: "boolean" },
+    meaningPreserved: { type: "boolean" },
+    fabrications: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["text", "severity", "why"],
+        properties: {
+          text: { type: "string" },
+          severity: { type: "string", enum: ["high", "medium", "low"] },
+          why: { type: "string" },
+        },
+      },
+    },
+    omissions: { type: "array", items: { type: "string" } },
+    unflaggedGuesses: { type: "array", items: { type: "string" } },
+    styleScore: { type: "number" },
+    styleNotes: { type: "string" },
+  },
+} as const;
 
 /** JSON schema for OpenAI structured outputs. */
 export const DRAFT_SCHEMA = {

@@ -17,6 +17,8 @@ import {
   SendIcon,
   PlayIcon,
   InfoIcon,
+  AlertIcon,
+  ShieldIcon,
 } from "./icons";
 
 const TONES: Tone[] = ["Warm", "Neutral", "Direct"];
@@ -146,7 +148,7 @@ export function DraftView() {
       )}
 
       {/* Ready */}
-      {(note.status === "ready" || note.status === "sent") && (
+      {(note.status === "ready" || note.status === "sent" || note.status === "needs_review") && (
         <>
           <div className="mb-[18px] flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">
@@ -189,6 +191,20 @@ export function DraftView() {
               <ModelPicker onChange={() => regenerate(note.id)} />
             </div>
           </div>
+
+          {note.status === "needs_review" && (
+            <div
+              role="alert"
+              className="mb-[18px] flex items-start gap-2.5 rounded-[12px] border border-warn-line bg-warn-bg px-4 py-3 text-[13.5px] leading-relaxed text-warn-ink"
+            >
+              <AlertIcon size={18} className="mt-px flex-none" />
+              <span>
+                <strong className="font-bold">Needs review.</strong> The faithfulness audit flagged
+                content that isn’t supported by your voice note — check the highlighted spans and the
+                Faithfulness check below before sending.
+              </span>
+            </div>
+          )}
 
           <div className="grid grid-cols-[repeat(auto-fit,minmax(330px,1fr))] items-start gap-[18px]">
             {/* Transcript */}
@@ -477,6 +493,85 @@ export function DraftView() {
               ))}
             </ul>
           </div>
+
+          {/* Faithfulness check */}
+          {note.verdict && (
+            <div className="mt-[18px] overflow-hidden rounded-[14px] border border-line bg-white">
+              <div className="flex flex-wrap items-center gap-[9px] border-b border-line-soft px-[18px] py-[15px]">
+                <ShieldIcon size={16} className={note.verdict.faithful ? "text-success" : "text-warn-ink"} />
+                <h3 className="m-0 text-sm font-bold">Faithfulness check</h3>
+                <span
+                  className="rounded-full px-[9px] py-[3px] text-[11px] font-bold"
+                  style={
+                    note.verdict.faithful
+                      ? { background: "#E7F1EC", color: "#205C42" }
+                      : { background: "#FBF3E2", color: "#8A6516" }
+                  }
+                >
+                  {note.verdict.faithful ? "Grounded" : "Needs review"}
+                </span>
+                <span className="ml-auto text-[11.5px] text-faint">
+                  {note.verdict.auditorModel ? `audited by ${note.verdict.auditorModel}` : "deterministic checks"}
+                  {note.verdict.repaired ? " · auto-repaired" : ""}
+                </span>
+              </div>
+              <div className="flex flex-col gap-3.5 px-[18px] py-4">
+                {note.verdict.fabrications.length === 0 && note.verdict.omissions.length === 0 && (
+                  <div className="text-[13.5px] text-slate-600">
+                    Every name, date, link, and claim in the draft is grounded in your voice note.
+                  </div>
+                )}
+                {note.verdict.fabrications.length > 0 && (
+                  <div>
+                    <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-[.5px] text-muted">
+                      Unsupported / inferred
+                    </div>
+                    <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
+                      {note.verdict.fabrications.map((f, i) => (
+                        <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.5] text-slate-600">
+                          <span
+                            className="mt-[1px] flex-none rounded px-1.5 py-[1px] text-[10.5px] font-bold uppercase"
+                            style={
+                              f.severity === "high"
+                                ? { background: "#FBE9E9", color: "#9A2F2F" }
+                                : f.severity === "medium"
+                                  ? { background: "#FBF3E2", color: "#8A6516" }
+                                  : { background: "#EEF1F2", color: "#5C6B73" }
+                            }
+                          >
+                            {f.severity}
+                          </span>
+                          <span>
+                            <strong className="font-semibold text-ink-2">“{f.text}”</strong> — {f.why}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {note.verdict.omissions.length > 0 && (
+                  <div>
+                    <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-[.5px] text-muted">
+                      Possibly missing from the draft
+                    </div>
+                    <ul className="m-0 flex list-none flex-col gap-1 p-0">
+                      {note.verdict.omissions.map((o, i) => (
+                        <li key={i} className="text-[13px] leading-[1.5] text-slate-600">
+                          • {o}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 border-t border-line-soft pt-3 text-[12.5px] text-muted">
+                  <span className="font-semibold text-slate-600">
+                    Style match {Math.round((note.verdict.styleScore ?? 0) * 100)}%
+                  </span>
+                  {note.verdict.styleNotes && <span>· {note.verdict.styleNotes}</span>}
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </section>

@@ -14,6 +14,7 @@ import type {
   Assumption,
   NoteStatus,
   NoteType,
+  Verdict,
 } from "../types";
 
 // ---- Auth.js (NextAuth) adapter tables ----
@@ -94,6 +95,7 @@ export const notes = pgTable("notes", {
   provider: text("provider"),
   source: text("source").notNull().default("upload"),
   archived: boolean("archived").notNull().default(false),
+  verdict: jsonb("verdict").$type<Verdict>(),
   errorMessage: text("error_message"),
   segments: jsonb("segments").$type<TranscriptSegment[]>().notNull().default([]),
   paragraphs: jsonb("paragraphs").$type<BodySegment[][]>().notNull().default([]),

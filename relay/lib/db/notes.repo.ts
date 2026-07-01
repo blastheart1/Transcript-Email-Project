@@ -26,6 +26,7 @@ export function rowToNote(r: NoteRow): Note {
     model: r.model ?? undefined,
     provider: r.provider ?? undefined,
     archived: r.archived,
+    verdict: r.verdict ?? undefined,
     errorMessage: r.errorMessage ?? undefined,
   };
 }
@@ -53,6 +54,7 @@ export function noteToColumns(n: Partial<Note> & { source?: string }): Partial<N
   if (n.model !== undefined) cols.model = n.model;
   if (n.provider !== undefined) cols.provider = n.provider;
   if (n.archived !== undefined) cols.archived = n.archived;
+  if (n.verdict !== undefined) cols.verdict = n.verdict;
   if (n.errorMessage !== undefined) cols.errorMessage = n.errorMessage;
   if (n.source !== undefined) cols.source = n.source;
   return cols;

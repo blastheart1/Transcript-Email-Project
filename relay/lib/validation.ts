@@ -9,7 +9,7 @@ export const noteInputSchema = z.object({
   person: z.string().optional(),
   type: z.enum(["Follow-up", "Intro", "Reply", "Note"]).optional(),
   subject: z.string().optional(),
-  status: z.enum(["transcribing", "ready", "sent", "error"]).optional(),
+  status: z.enum(["transcribing", "ready", "sent", "error", "needs_review"]).optional(),
   received: z.string().optional(),
   duration: z.string().optional(),
   transcript: z.string().optional(),
@@ -24,6 +24,7 @@ export const noteInputSchema = z.object({
   length: z.enum(["Concise", "Standard", "Detailed"]).optional(),
   source: z.string().optional(),
   archived: z.boolean().optional(),
+  verdict: z.any().optional(),
   errorMessage: z.string().optional(),
 });
 
