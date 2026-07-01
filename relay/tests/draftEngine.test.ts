@@ -1,5 +1,27 @@
 import { describe, it, expect } from "vitest";
-import { normalizeDraft, ensureSubject } from "../lib/draftEngine";
+import { normalizeDraft, ensureSubject, cleanParagraphs } from "../lib/draftEngine";
+
+describe("cleanParagraphs", () => {
+  it("drops blank paragraphs and empty runs (no stray blank lines)", () => {
+    const out = cleanParagraphs([
+      [{ t: "Hi Dana," }],
+      [{ t: "" }], // blank paragraph → dropped
+      [{ t: "Body " }, { t: "" }, { t: "text." }], // empty middle run → dropped
+      [{ t: "   " }], // whitespace-only paragraph → dropped
+      [{ t: "Thanks,\nConnor" }],
+    ]);
+    expect(out).toEqual([
+      [{ t: "Hi Dana," }],
+      [{ t: "Body " }, { t: "text." }],
+      [{ t: "Thanks,\nConnor" }],
+    ]);
+  });
+
+  it("preserves flagged runs and their tips", () => {
+    const out = cleanParagraphs([[{ t: "See " }, { t: "next Tue", flagged: true, tip: "confirm" }]]);
+    expect(out[0][1]).toEqual({ t: "next Tue", flagged: true, tip: "confirm" });
+  });
+});
 
 describe("ensureSubject", () => {
   it("keeps a good subject", () => {

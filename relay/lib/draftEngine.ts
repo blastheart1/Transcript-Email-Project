@@ -41,6 +41,17 @@ export function ensureSubject(raw: Partial<DraftResponse>): string {
   return type === "Reply" ? "Re: your note" : "Quick note";
 }
 
+/**
+ * Tidy runs, drop truly-empty runs, and drop blank paragraphs — so a live draft
+ * gets the same polish the seed data was hand-cleaned with (no stray blank lines).
+ * Exported for tests.
+ */
+export function cleanParagraphs(paras: BodySegment[][]): BodySegment[][] {
+  return paras
+    .map((p) => tidySegments(p).filter((run) => run.t !== ""))
+    .filter((p) => p.some((run) => run.t.trim() !== ""));
+}
+
 /** Normalize a raw model object into a clean DraftResponse. Exported for tests. */
 export function normalizeDraft(raw: Partial<DraftResponse>): DraftResponse {
   return {
@@ -48,7 +59,7 @@ export function normalizeDraft(raw: Partial<DraftResponse>): DraftResponse {
     person: raw.person || "",
     toEmail: raw.toEmail || "",
     subject: ensureSubject(raw),
-    paragraphs: (raw.paragraphs || []).map(tidySegments),
+    paragraphs: cleanParagraphs(raw.paragraphs || []),
     assumptions: tidyAssumptions(raw.assumptions || []),
   };
 }

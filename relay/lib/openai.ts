@@ -17,4 +17,4 @@ export function getOpenAI(): OpenAI {
 export const TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL || "whisper-1";
 /** Default transcription language. English unless explicitly overridden. */
 export const TRANSCRIBE_LANGUAGE = process.env.OPENAI_TRANSCRIBE_LANGUAGE || "en";
-export const DRAFT_MODEL = process.env.OPENAI_DRAFT_MODEL || "gpt-4o";
+export const DRAFT_MODEL = process.env.OPENAI_DRAFT_MODEL || "gpt-5.4";
