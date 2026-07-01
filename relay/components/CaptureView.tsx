@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRelay } from "@/lib/store";
 import { useRecorder, extForMime } from "@/lib/useRecorder";
 import { ACCEPT_AUDIO } from "@/lib/constants";
 import { formatClock } from "@/lib/format";
-import { MicIcon, CheckIcon, UploadIcon, AlertIcon } from "./icons";
+import { MicIcon, CheckIcon, UploadIcon, AlertIcon, PhoneIcon } from "./icons";
 
 type Tab = "record" | "upload" | "webhook";
 
@@ -20,8 +20,15 @@ export function CaptureView() {
   const { ingestAudio, setView } = useRelay();
   const [tab, setTab] = useState<Tab>("record");
   const [copiedHook, setCopiedHook] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
   const rec = useRecorder(32);
+
+  // On phones, default to Upload — the most reliable way to bring in an existing
+  // recording (e.g. an iPhone Voice Memo) without fighting in-browser recording.
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 820px)").matches) {
+      setTab("upload");
+    }
+  }, []);
 
   const endpoint =
     typeof window !== "undefined" ? `${window.location.origin}/api/ingest` : "/api/ingest";
@@ -173,31 +180,41 @@ export function CaptureView() {
       {/* UPLOAD */}
       {tab === "upload" && (
         <>
-          <input
-            ref={fileRef}
-            type="file"
-            accept={ACCEPT_AUDIO}
-            onChange={onFile}
-            className="sr-only"
-            aria-label="Choose an audio file"
-          />
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => fileRef.current?.click()}
-            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && fileRef.current?.click()}
-            className="group cursor-pointer rounded-[14px] border-2 border-dashed border-[#CBD5D8] bg-white px-8 py-12 text-center hover:border-primary hover:bg-tint-soft"
-            data-tip="Click to browse, or drag a file anywhere on the page"
+          {/* A <label> opens the native file picker reliably on iOS Safari. */}
+          <label
+            className="group flex cursor-pointer flex-col items-center rounded-[14px] border-2 border-dashed border-[#CBD5D8] bg-white px-6 py-10 text-center hover:border-primary hover:bg-tint-soft sm:py-12"
+            data-tip="Choose a voice note from your phone or computer"
           >
-            <div className="mx-auto mb-4 flex h-[54px] w-[54px] items-center justify-center rounded-[13px] bg-tint">
+            <input
+              type="file"
+              accept={ACCEPT_AUDIO}
+              onChange={onFile}
+              className="sr-only"
+              aria-label="Choose a voice note"
+            />
+            <span className="mb-4 flex h-[54px] w-[54px] items-center justify-center rounded-[13px] bg-tint">
               <UploadIcon size={24} className="text-primary" />
-            </div>
-            <div className="mb-[5px] text-base font-bold">Drop an audio file to draft</div>
-            <div className="mb-5 text-[13.5px] text-muted">
+            </span>
+            <span className="mb-[5px] text-base font-bold">Upload a voice note</span>
+            <span className="mb-1 text-[13.5px] text-muted">
               <strong className="font-bold text-slate-600">.m4a</strong> recommended · also MP3, WAV, MP4 or WEBM · up to 25&nbsp;min
-            </div>
-            <span className="inline-flex h-[42px] items-center rounded-[9px] border border-primary bg-white px-[22px] text-sm font-semibold text-primary">
-              Browse files
+            </span>
+            <span className="mb-5 text-[12.5px] text-faint">
+              Tap to choose from your phone — or drag a file here on desktop.
+            </span>
+            <span className="inline-flex h-[44px] items-center rounded-[9px] border border-primary bg-white px-[22px] text-sm font-semibold text-primary">
+              Choose file
+            </span>
+          </label>
+
+          <div className="mt-3 flex items-start gap-2.5 rounded-[11px] border border-line bg-tint-soft px-4 py-3 text-left text-[12.5px] leading-relaxed text-slate-500">
+            <PhoneIcon size={17} className="mt-px flex-none text-primary" />
+            <span>
+              <strong className="font-semibold text-slate-600">On iPhone:</strong> open{" "}
+              <strong className="font-semibold">Voice Memos</strong>, tap the note → the{" "}
+              <strong>•••</strong> menu → <strong>Save to Files</strong> (or Share → Save to Files).
+              Then tap <em>Choose file</em> above and pick it from <strong>Browse</strong>. Recent
+              audio also shows directly in the picker.
             </span>
           </div>
         </>

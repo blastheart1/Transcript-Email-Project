@@ -514,12 +514,14 @@ export function DraftView() {
                       >
                         {grounded ? "Grounded" : "Needs review"}
                       </span>
-                      <span
-                        className="rounded-full bg-tint-chip px-[9px] py-[3px] text-[11px] font-bold text-slate-500"
-                        data-tip="How accurately the draft reflects your voice note"
-                      >
-                        {Math.round((note.verdict.accuracy ?? 0) * 100)}% accurate
-                      </span>
+                      {typeof note.verdict.accuracy === "number" && (
+                        <span
+                          className="rounded-full bg-tint-chip px-[9px] py-[3px] text-[11px] font-bold text-slate-500"
+                          data-tip="How accurately the draft reflects your voice note"
+                        >
+                          {Math.round(note.verdict.accuracy * 100)}% accurate
+                        </span>
+                      )}
                       <span className="ml-auto text-[11.5px] text-faint">
                         {note.verdict.auditorModel ? `audited by ${note.verdict.auditorModel}` : "deterministic checks"}
                         {note.verdict.repaired ? ` · reprocessed ${(note.verdict.attempts ?? 2) - 1}×` : ""}
@@ -578,7 +580,10 @@ export function DraftView() {
                 )}
                 <div className="flex items-center gap-2 border-t border-line-soft pt-3 text-[12.5px] text-muted">
                   <span className="font-semibold text-slate-600">
-                    Accuracy {Math.round((note.verdict.accuracy ?? 0) * 100)}% · Style {Math.round((note.verdict.styleScore ?? 0) * 100)}%
+                    {typeof note.verdict.accuracy === "number"
+                      ? `Accuracy ${Math.round(note.verdict.accuracy * 100)}% · `
+                      : ""}
+                    Style {Math.round((note.verdict.styleScore ?? 0) * 100)}%
                   </span>
                   {note.verdict.styleNotes && <span>· {note.verdict.styleNotes}</span>}
                 </div>

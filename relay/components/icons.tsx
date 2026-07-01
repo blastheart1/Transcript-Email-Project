@@ -180,6 +180,13 @@ export const UnarchiveIcon = (p: IconProps) => (
   </Base>
 );
 
+export const PhoneIcon = (p: IconProps) => (
+  <Base {...p}>
+    <rect x="7" y="2" width="10" height="20" rx="2" />
+    <path d="M11 18h2" />
+  </Base>
+);
+
 export const CloseIcon = (p: IconProps) => (
   <Base strokeWidth={2} {...p}>
     <path d="M18 6 6 18M6 6l12 12" />
