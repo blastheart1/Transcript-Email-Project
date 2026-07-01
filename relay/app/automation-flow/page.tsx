@@ -108,30 +108,29 @@ const DECISIONS: { title: string; body: string; Icon: IconType }[] = [
 
 const IDEAS: { group: string; items: string[] }[] = [
   {
-    group: "More triggers (same endpoint)",
+    group: "More ways to get notes in",
     items: [
-      "Zapier / Make / n8n: Google Drive “New file in folder” → POST { audioUrl } to /api/ingest.",
-      "Native Google Drive / Gmail push (watch + Pub/Sub) to remove the Zapier dependency.",
-      "Recorder apps (Otter, Fathom, Voice Memos), Twilio voicemail, or a Telegram/WhatsApp voice bot.",
-      "Email-in: a dedicated inbound address that drafts any forwarded voice memo.",
+      "Connect Google Drive via Zapier (or Make / n8n): drop a recording in a folder and a draft appears on its own.",
+      "Pull notes from recorder apps (Otter, Fathom), phone voicemail (Twilio), or a WhatsApp / Telegram voice message.",
+      "Forward a voice memo to a dedicated email address and get a draft back.",
     ],
   },
   {
-    group: "Scheduled jobs & scripts (cron)",
+    group: "Let it run on its own",
     items: [
-      "Poll a Drive/Dropbox folder every few minutes as a robust fallback trigger.",
-      "Recovery cron to re-drive notes stuck transcribing or errored.",
-      "Daily digest nudging any unsent “ready” drafts; weekly style-profile refresh from recently sent mail.",
-      "A local folder-watcher / CLI that POSTs any new recording for a desktop dictation flow.",
+      "A scheduled check (a cron job) of the connected folder every few minutes, so nothing gets missed.",
+      "Automatically retry any note that didn't finish the first time.",
+      "A once-a-day digest listing the drafts that are ready and waiting for you.",
+      "Keep learning your writing style from the emails you actually send.",
     ],
   },
   {
-    group: "Production hardening",
+    group: "Polish for everyday use",
     items: [
-      "Async ingest (queue) + idempotency keys + HMAC-signed webhooks; audit log + dead-letter.",
-      "Gmail “Create Draft” so the finished email lands in the real Drafts folder, formatted.",
-      "Recipient auto-fill from Google Contacts / HubSpot instead of leaving the To field blank.",
-      "Push updates (LISTEN/NOTIFY or realtime) instead of polling; golden-output eval harness; cost-based model routing.",
+      "Process longer recordings in the background (a job queue) so there's no waiting.",
+      "Create the finished email as a Gmail draft, ready to send.",
+      "Auto-fill the recipient from your contacts (Google Contacts / HubSpot).",
+      "New drafts appear live, the moment they're ready — no refresh needed.",
     ],
   },
 ];
@@ -280,7 +279,7 @@ export default function AutomationFlowPage() {
         <section className="mb-10">
           <h2 className="mb-1 text-[18px] font-bold">Automation ideas &amp; roadmap</h2>
           <p className="mb-5 text-[13.5px] text-slate-400">
-            The pipeline is source-agnostic, so new triggers are just new front doors.
+            Where this can go next — all built on the same core, so each is an add-on, not a rebuild.
           </p>
           <div className="grid gap-4 md:grid-cols-3">
             {IDEAS.map((col) => (
