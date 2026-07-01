@@ -49,11 +49,18 @@ export function DraftView() {
   const [bodyView, setBodyView] = useState<"review" | "html">("review");
   const [copiedHtml, setCopiedHtml] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
+  // Pending tone/length/model changes the user hasn't applied yet.
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     if (state.editing && note) setEditText(bodyText(note));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.editing]);
+
+  // Reset the pending flag whenever a different note is opened.
+  useEffect(() => {
+    setDirty(false);
+  }, [state.selectedId]);
 
   if (!note) {
     return (
@@ -66,12 +73,17 @@ export function DraftView() {
   const si = statusInfo(note.status);
   const flags = flagCount(note);
 
+  // Control changes update the selection only — the redraft is explicit.
   function setTone(t: Tone) {
     dispatch({ type: "SET_TONE", tone: t });
-    void regenerate(note!.id);
+    setDirty(true);
   }
   function setLen(l: Length) {
     dispatch({ type: "SET_LENGTH", length: l });
+    setDirty(true);
+  }
+  function redraft() {
+    setDirty(false);
     void regenerate(note!.id);
   }
 
@@ -188,7 +200,7 @@ export function DraftView() {
                   ))}
                 </div>
               </div>
-              <ModelPicker onChange={() => regenerate(note.id)} />
+              <ModelPicker onChange={() => setDirty(true)} />
             </div>
           </div>
 
@@ -412,13 +424,27 @@ export function DraftView() {
 
               <div className="flex flex-wrap items-center gap-2.5 border-t border-line-soft bg-tint-soft px-[18px] py-3.5">
                 <button
-                  onClick={() => regenerate(note.id)}
-                  className="flex h-10 cursor-pointer items-center gap-[7px] rounded-[9px] border border-line bg-white px-3.5 text-[13.5px] font-semibold text-slate-600"
-                  data-tip="Re-draft with the current tone and length"
+                  onClick={redraft}
+                  className={[
+                    "flex h-10 cursor-pointer items-center gap-[7px] rounded-[9px] border px-3.5 text-[13.5px] font-semibold transition-colors",
+                    dirty
+                      ? "border-primary bg-primary text-white"
+                      : "border-line bg-white text-slate-600",
+                  ].join(" ")}
+                  data-tip={
+                    dirty
+                      ? `Redraft in a ${state.tone.toLowerCase()}, ${state.length.toLowerCase()} tone with ${state.model}`
+                      : "Redraft — a fresh take with the same settings"
+                  }
                 >
                   <RefreshIcon size={15} />
-                  Regenerate
+                  Redraft
                 </button>
+                {dirty && (
+                  <span className="text-[12px] font-medium text-warn-ink" aria-live="polite">
+                    Unapplied changes
+                  </span>
+                )}
                 <div className="flex-1" />
                 {bodyView === "html" && !state.editing ? (
                   <button

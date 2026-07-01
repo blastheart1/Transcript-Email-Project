@@ -118,7 +118,7 @@ never invents facts, flags every guess, never sends on its own."
 1. **Tools & why (30s):** Next.js/Vercel + Neon; Whisper; GPT-5.4 to draft, Claude to
    audit + as fallback. "Two providers on purpose — cross-model checking."
 2. **Demo (90s):** Inbox → open a draft: transcript ‖ email, **highlighted guesses**,
-   "What Relay changed & assumed," Faithfulness panel. Change tone/length/model (re-drafts).
+   "What Relay changed & assumed," Faithfulness panel. Adjust tone/length/model → hit **Redraft** to apply.
    New capture → upload a sample → it transcribes + drafts end-to-end. Show Settings →
    Webhook (Zapier). Show it on **mobile** (bottom tabs + cards).
 3. **AI side (90s — the money section):** model choice (GPT-5.4 draft / Claude audit).
