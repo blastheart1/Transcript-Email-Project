@@ -15,7 +15,7 @@ export function Header() {
   const [title, sub] = TITLES[state.view];
 
   return (
-    <header className="sticky top-0 z-20 hidden h-[62px] flex-none items-center justify-between border-b border-line bg-white px-[26px] md:flex">
+    <header className="z-20 hidden h-[62px] flex-none items-center justify-between border-b border-line bg-white px-[26px] md:flex">
       <div className="flex min-w-0 items-center gap-3">
         <h1 className="m-0 text-[17px] font-bold tracking-[-.2px]">{title}</h1>
         {sub && <span className="text-[13px] font-medium text-muted">{sub}</span>}

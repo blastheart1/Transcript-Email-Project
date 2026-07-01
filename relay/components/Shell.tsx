@@ -69,12 +69,12 @@ export function Shell({ user }: { user: SessionUser | null }) {
   }, [dispatch, ingestAudio]);
 
   return (
-    <div id="shell" className="flex min-h-screen text-ink">
+    <div id="shell" className="flex h-dvh overflow-hidden text-ink">
       <Sidebar user={user} />
       <MobileNav user={user} />
-      <main className="flex min-w-0 flex-1 flex-col">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col">
         <Header />
-        <div className="flex-1 overflow-auto pb-[76px] pt-14 md:pb-0 md:pt-0">
+        <div className="min-h-0 flex-1 overflow-auto pb-[76px] pt-14 md:pb-0 md:pt-0">
           {state.view === "inbox" && <InboxView />}
           {state.view === "capture" && <CaptureView />}
           {state.view === "draft" && <DraftView />}

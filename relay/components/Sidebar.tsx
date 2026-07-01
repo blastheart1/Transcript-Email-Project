@@ -19,7 +19,7 @@ export function Sidebar({ user }: { user: SessionUser | null }) {
   return (
     <aside
       id="sidebar"
-      className="sticky top-0 hidden h-screen w-[236px] flex-none flex-col border-r border-line bg-white px-4 py-[22px] md:flex"
+      className="hidden h-full w-[236px] flex-none flex-col overflow-y-auto border-r border-line bg-white px-4 py-[22px] md:flex"
     >
       <div className="brandblock mb-2 flex items-center gap-2.5 border-b border-[#EDF0F1] px-1.5 pb-5">
         <div className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-lg bg-primary">
