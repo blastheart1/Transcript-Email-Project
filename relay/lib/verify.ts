@@ -59,6 +59,49 @@ async function auditAnthropic(system: string, user: string): Promise<RawVerdict>
   return tool.input as RawVerdict;
 }
 
+const SEVERITIES = ["high", "medium", "low"] as const;
+
+/** Coerce whatever the auditor returned into a clean, well-typed verdict shape.
+ *  Model tool-calls aren't guaranteed to match the schema, so never assume types. */
+export function coerceRaw(raw: unknown): {
+  faithful: boolean;
+  meaningPreserved: boolean;
+  accuracy: number;
+  fabrications: Fabrication[];
+  omissions: string[];
+  unflaggedGuesses: string[];
+  styleScore: number;
+  styleNotes: string;
+} {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const strArray = (v: unknown): string[] =>
+    Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+  const num = (v: unknown, d: number): number =>
+    typeof v === "number" && Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : d;
+  const fabrications: Fabrication[] = Array.isArray(r.fabrications)
+    ? r.fabrications
+        .filter((x): x is Record<string, unknown> => !!x && typeof x === "object")
+        .map((x) => ({
+          text: String(x.text ?? "").trim(),
+          severity: (SEVERITIES as readonly string[]).includes(String(x.severity))
+            ? (x.severity as Fabrication["severity"])
+            : "medium",
+          why: String(x.why ?? "").trim(),
+        }))
+        .filter((f) => f.text.length > 0)
+    : [];
+  return {
+    faithful: r.faithful !== false,
+    meaningPreserved: r.meaningPreserved !== false,
+    accuracy: num(r.accuracy, 1),
+    fabrications,
+    omissions: strArray(r.omissions),
+    unflaggedGuesses: strArray(r.unflaggedGuesses),
+    styleScore: num(r.styleScore, 1),
+    styleNotes: typeof r.styleNotes === "string" ? r.styleNotes : "",
+  };
+}
+
 function mergeFabrications(a: Fabrication[], b: Fabrication[]): Fabrication[] {
   const out = [...a];
   const seen = new Set(a.map((f) => f.text.toLowerCase().trim()));
@@ -91,37 +134,32 @@ export async function auditDraft(input: AuditInput): Promise<Verdict> {
 
   const deterministic = groundingFabrications(input.draftText, input.transcript);
 
-  let raw: RawVerdict;
-  let usedModel: string;
+  // The auditor is best-effort: any failure (network, bad output shape) degrades to
+  // the deterministic checks rather than crashing the whole draft.
+  let rawUnknown: unknown = null;
+  let usedModel: string | undefined;
+  let usedProvider: DraftProvider | undefined;
+  let auditError: string | undefined;
   try {
     if (provider === "anthropic") {
-      raw = await auditAnthropic(system, user);
+      rawUnknown = await auditAnthropic(system, user);
       usedModel = AUDIT_ANTHROPIC_MODEL;
     } else {
-      raw = await auditOpenAI(system, user);
+      rawUnknown = await auditOpenAI(system, user);
       usedModel = AUDIT_OPENAI_MODEL;
     }
+    usedProvider = provider;
   } catch (err) {
-    // If the cross-model auditor is unavailable, fall back to deterministic-only.
-    const faithful = !deterministic.some((f) => f.severity === "high");
-    return {
-      faithful,
-      meaningPreserved: true,
-      accuracy: deterministic.length === 0 ? 1 : faithful ? 0.9 : 0.6,
-      fabrications: deterministic,
-      omissions: [],
-      unflaggedGuesses: [],
-      styleScore: 1,
-      styleNotes: `Auditor unavailable (${err instanceof Error ? err.message : "error"}); deterministic checks only.`,
-      auditorProvider: undefined,
-      auditorModel: undefined,
-    };
+    auditError = err instanceof Error ? err.message : "error";
   }
 
-  const fabrications = mergeFabrications(raw.fabrications || [], deterministic);
+  const audited = rawUnknown !== null;
+  const raw = coerceRaw(rawUnknown);
+  const fabrications = mergeFabrications(raw.fabrications, deterministic);
   const faithful = raw.faithful && !fabrications.some((f) => f.severity === "high");
+
   // Deterministic findings cap the auditor's accuracy claim.
-  let accuracy = typeof raw.accuracy === "number" ? raw.accuracy : 1;
+  let accuracy = audited ? raw.accuracy : deterministic.length === 0 ? 1 : 0.85;
   if (deterministic.some((f) => f.severity === "high")) accuracy = Math.min(accuracy, 0.6);
   else if (deterministic.length) accuracy = Math.min(accuracy, 0.9);
 
@@ -130,11 +168,11 @@ export async function auditDraft(input: AuditInput): Promise<Verdict> {
     meaningPreserved: raw.meaningPreserved,
     accuracy,
     fabrications,
-    omissions: raw.omissions || [],
-    unflaggedGuesses: raw.unflaggedGuesses || [],
-    styleScore: typeof raw.styleScore === "number" ? raw.styleScore : 1,
-    styleNotes: raw.styleNotes || "",
-    auditorProvider: provider,
+    omissions: raw.omissions,
+    unflaggedGuesses: raw.unflaggedGuesses,
+    styleScore: audited ? raw.styleScore : 1,
+    styleNotes: auditError ? `Auditor unavailable (${auditError}); deterministic checks only.` : raw.styleNotes,
+    auditorProvider: usedProvider,
     auditorModel: usedModel,
   };
 }
