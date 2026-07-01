@@ -150,23 +150,24 @@ This is the part I invested in most — a **layered, defense-in-depth guardrail*
    scores the draft against the transcript and returns structured `fabrications`
    (with severity), `omissions`, `unflaggedGuesses`, and a style score. Independent
    models rarely share the same blind spot.
-4. **Reprocess-then-hold policy**: the auditor also returns an **accuracy score (0–1)**.
-   If there is **any fabrication** *or* **accuracy < 95%**, Relay runs a stricter re-draft
-   that targets the exact findings and re-audits — looping **up to 3 attempts**. If it
-   clears, it's `ready`; if it still fails after 3 passes, the note is held as
-   **"Needs review."** When accuracy didn't improve across passes, Relay adds a note that
-   the **source voice note itself is likely the limiter** (unclear/noisy/incomplete) —
-   because the AI can only work from what was actually said.
+4. **Reprocess-then-be-honest policy**: if the audit finds **any fabrication**, Relay runs
+   a stricter re-draft that targets the exact findings and re-audits — **up to 3 attempts**.
+   If it clears, it's `ready`. If fabrications remain, the note is held as **"Needs review"**
+   with an **honest disclaimer**: either "reduced but a couple details still couldn't be
+   verified — confirm/remove the highlighted spans," or, when reprocessing didn't help,
+   "this points to the source voice note itself (unclear/noisy/incomplete) — AI can only
+   work from what was said." (The auditor also reports an **accuracy score**, shown for
+   transparency — it is *informational*, not a pass/fail target.)
 5. **Never auto-sends** — a locked guardrail; the human always clicks send.
 
 ### Validation
 - `npm test` — 44 unit tests (guardrails, fact-check, reprocess policy, prompt, email
   HTML, pipeline).
 - `npm run test:real` — real end-to-end over the three sample `.m4a` files: transcribe →
-  draft → **cross-model audit** → reprocess loop → webhook persistence. With the ≥95%
-  accuracy bar, drafts reprocess until they clear: e.g. Dictation 3 reached **100%
-  accuracy after 3 passes** and shipped `ready` (0 fabrications, recipient left blank). A
-  note that can't clear in 3 passes is held as **Needs review** with a source-quality note.
+  draft → **cross-model audit** → reprocess loop → webhook persistence. Representative run:
+  Dictation 1 & 2 → **`ready` in one pass** (0 fabrications, ~12s each); Dictation 3 →
+  fabrications found, **reprocessed 3×**, couldn't fully clear → **`needs_review`** with the
+  honest disclaimer + highlighted spans. Recipient left blank each time.
 
 ---
 
@@ -200,14 +201,14 @@ never sends on its own."
   note is the *only* source of truth. That single decision is what makes "flag every
   guess" enforceable and reviewable instead of hoping the prose behaves.
 - **How I prevent it going off-base (layers):** deterministic fact-check → cross-model
-  audit (with an **accuracy score**) → **reprocess loop** (any fabrication or accuracy
-  < 95% → stricter re-draft, up to 3×) → hold as "Needs review" if it still can't clear,
-  with a **source-quality note** when reprocessing didn't help. Show the Faithfulness
-  panel live (accuracy %, flagged claims, attempts).
-- **Limitations before production:** the 95% bar means most drafts reprocess at least
-  once, so a draft can take ~100–170s and up to 6 model calls — that **exceeds Vercel's
-  60s function limit**, so production needs an async queue (or a lighter/faster auditor
-  model). Transcription can also mis-hear names; the audit's scores are a model's opinion.
+  audit → **reprocess loop** (any fabrication → stricter re-draft, up to 3×) → if it still
+  can't clear, hold as "Needs review" with an **honest disclaimer** about whether the
+  source note is the likely limiter. Inferred spans are always flagged either way. Show
+  the Faithfulness panel live (flagged claims, attempts, accuracy for info).
+- **Limitations before production:** clean notes ship in ~12s (2 model calls); only notes
+  with fabrications loop (a 3-attempt case is ~60s / up to 6 calls, which brushes Vercel's
+  60s function limit — production would move ingest to an async queue). Transcription can
+  mis-hear names; the audit's scores are a model's opinion.
 
 **4. Matching Connor's writing style (30s)**
 - Relay imitates **only Connor's 3 real sample emails** (editable in Settings, stored in

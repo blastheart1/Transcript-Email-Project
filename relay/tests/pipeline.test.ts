@@ -14,7 +14,7 @@ const baseVerdict: Verdict = {
 };
 
 describe("needsReprocess", () => {
-  it("passes a clean, fully-accurate draft", () => {
+  it("passes a draft with no fabrications", () => {
     expect(needsReprocess(baseVerdict)).toBe(false);
   });
   it("reprocesses on ANY fabrication, even low severity", () => {
@@ -22,9 +22,8 @@ describe("needsReprocess", () => {
       needsReprocess({ ...baseVerdict, fabrications: [{ text: "x", severity: "low", why: "y" }] }),
     ).toBe(true);
   });
-  it("reprocesses when accuracy drops below 95%", () => {
-    expect(needsReprocess({ ...baseVerdict, accuracy: 0.94 })).toBe(true);
-    expect(needsReprocess({ ...baseVerdict, accuracy: 0.95 })).toBe(false);
+  it("does NOT reprocess on low accuracy alone (accuracy is informational)", () => {
+    expect(needsReprocess({ ...baseVerdict, accuracy: 0.4 })).toBe(false);
   });
 });
 

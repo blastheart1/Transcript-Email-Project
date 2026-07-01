@@ -3,8 +3,6 @@ import { auditDraft } from "./verify";
 import { bodyText } from "./format";
 import type { DraftRequest, DraftResponse, BodySegment, Verdict, NoteStatus } from "./types";
 
-/** Reprocess trigger: any fabrication (any severity) OR accuracy below this. */
-export const ACCURACY_THRESHOLD = 0.95;
 /** Total draft attempts allowed (1 initial + up to 2 stricter re-drafts). */
 const MAX_ATTEMPTS = 3;
 
@@ -16,9 +14,9 @@ export interface PipelineResult {
   model: string;
 }
 
-/** True when the draft must be reprocessed: any fabrication, or accuracy < 95%. */
-export function needsReprocess(v: Verdict, threshold = ACCURACY_THRESHOLD): boolean {
-  return v.fabrications.length > 0 || (v.accuracy ?? 1) < threshold;
+/** Reprocess only to clear fabrications — we don't chase an accuracy target. */
+export function needsReprocess(v: Verdict): boolean {
+  return v.fabrications.length > 0;
 }
 
 /** Best-effort: split any unflagged inferred span into a highlighted run. */
@@ -67,14 +65,16 @@ async function audit(req: DraftRequest, draft: DraftResult): Promise<Verdict> {
  * Draft → cross-model audit → reprocess loop → apply flags → status. Shared by
  * /api/draft and /api/ingest so every trigger gets identical guardrails E2E.
  *
- * Policy: while the audit reports ANY fabrication or accuracy < 95%, run a
- * stricter re-draft that targets the exact findings and re-audit — up to
- * MAX_ATTEMPTS. If it still fails after that, hold the note as "needs_review".
+ * Policy: if the audit finds any fabrication, run a stricter re-draft that
+ * targets the exact findings and re-audit — up to MAX_ATTEMPTS. If fabrications
+ * remain after that, hold as "needs_review" with an honest disclaimer about
+ * whether the source voice note is the likely limiter. Inferred spans are always
+ * flagged, whatever the outcome.
  */
 export async function runDraftPipeline(req: DraftRequest): Promise<PipelineResult> {
   let draft = await generateDraft(req);
   let verdict = await audit(req, draft);
-  const firstAccuracy = verdict.accuracy ?? 1;
+  const firstFabCount = verdict.fabrications.length;
   let attempts = 1;
 
   while (needsReprocess(verdict) && attempts < MAX_ATTEMPTS) {
@@ -92,13 +92,12 @@ export async function runDraftPipeline(req: DraftRequest): Promise<PipelineResul
 
   verdict = { ...verdict, attempts, repaired: attempts > 1 };
 
-  // Exhausted the retries and still not clean → tell the reviewer why. If accuracy
-  // never improved across passes, the limiter is almost always the source audio.
+  // Couldn't clear every fabrication → be honest about the likely cause.
   if (needsReprocess(verdict)) {
-    const improved = (verdict.accuracy ?? 1) > firstAccuracy + 0.02;
+    const improved = verdict.fabrications.length < firstFabCount;
     verdict.reviewNote = improved
-      ? `Still below the ${Math.round(ACCURACY_THRESHOLD * 100)}% accuracy bar after ${attempts} passes — review the highlighted items before sending.`
-      : `Relay reprocessed this ${attempts}× and accuracy didn't improve. That usually means the source voice note is unclear, noisy, or missing key details — AI can only work from what was actually said. Check the transcript on the left and consider re-recording the note.`;
+      ? `Reprocessed ${attempts}× and reduced the issues, but a couple of details still couldn't be verified against your note. They're highlighted — confirm or remove them before sending.`
+      : `Reprocessed ${attempts}× and couldn't clear these. That usually points to the source voice note itself — unclear, noisy, or missing details. AI can only work from what was actually said, so check the transcript and consider re-recording.`;
   }
 
   const status = needsReprocess(verdict) ? "needs_review" : "ready";
