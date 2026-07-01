@@ -116,7 +116,7 @@ export function DraftView() {
   }
 
   return (
-    <section className="mx-auto max-w-[1120px] px-[26px] pb-[60px] pt-5">
+    <section className="mx-auto max-w-[1120px] px-4 pb-10 pt-4 md:px-[26px] md:pb-[60px] md:pt-5">
       <button
         onClick={() => setView("inbox")}
         className="mb-3 inline-flex cursor-pointer items-center gap-1.5 border-none bg-transparent px-1 py-1.5 text-[13px] font-semibold text-slate-400"
@@ -167,7 +167,7 @@ export function DraftView() {
                 {note.type} to {note.person} · captured {note.received}
               </div>
             </div>
-            <div className="flex items-center gap-3.5">
+            <div className="flex flex-wrap items-center gap-x-3.5 gap-y-3">
               <div className="flex flex-col gap-1.5">
                 <span className="text-[10.5px] font-semibold uppercase tracking-[.6px] text-muted">Tone</span>
                 <div className="flex gap-1 rounded-lg bg-tint-chip p-[3px]">
@@ -410,7 +410,7 @@ export function DraftView() {
                 </div>
               )}
 
-              <div className="flex items-center gap-2.5 border-t border-line-soft bg-tint-soft px-[18px] py-3.5">
+              <div className="flex flex-wrap items-center gap-2.5 border-t border-line-soft bg-tint-soft px-[18px] py-3.5">
                 <button
                   onClick={() => regenerate(note.id)}
                   className="flex h-10 cursor-pointer items-center gap-[7px] rounded-[9px] border border-line bg-white px-3.5 text-[13.5px] font-semibold text-slate-600"

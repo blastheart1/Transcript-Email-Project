@@ -77,7 +77,7 @@ export function CaptureView() {
   }
 
   return (
-    <section className="mx-auto max-w-[760px] px-[26px] pb-[60px] pt-[26px]">
+    <section className="mx-auto max-w-[760px] px-4 pb-10 pt-5 md:px-[26px] md:pb-[60px] md:pt-[26px]">
       <div className="mb-[22px] flex max-w-[420px] gap-1 rounded-[11px] bg-tint-chip p-1">
         <button className={tabClass(tab === "record")} onClick={() => setTab("record")} data-tip-down data-tip="Record a note right now">
           Record

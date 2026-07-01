@@ -5,6 +5,7 @@ import { useRelay } from "@/lib/store";
 import { useTooltips } from "@/lib/useTooltips";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
+import { MobileNav } from "./MobileNav";
 import type { SessionUser } from "./UserMenu";
 import { InboxView } from "./InboxView";
 import { CaptureView } from "./CaptureView";
@@ -70,9 +71,10 @@ export function Shell({ user }: { user: SessionUser | null }) {
   return (
     <div id="shell" className="flex min-h-screen text-ink">
       <Sidebar user={user} />
+      <MobileNav user={user} />
       <main className="flex min-w-0 flex-1 flex-col">
         <Header />
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto pb-[76px] pt-14 md:pb-0 md:pt-0">
           {state.view === "inbox" && <InboxView />}
           {state.view === "capture" && <CaptureView />}
           {state.view === "draft" && <DraftView />}

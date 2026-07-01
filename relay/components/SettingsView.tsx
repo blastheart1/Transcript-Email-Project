@@ -30,7 +30,7 @@ export function SettingsView() {
   }
 
   return (
-    <section className="mx-auto flex max-w-[760px] flex-col gap-[18px] px-[26px] pb-[60px] pt-[26px]">
+    <section className="mx-auto flex max-w-[760px] flex-col gap-[18px] px-4 pb-10 pt-5 md:px-[26px] md:pb-[60px] md:pt-[26px]">
       {/* Voice & style profile */}
       <div className="rounded-[14px] border border-line bg-white p-6">
         <h2 className="m-0 mb-1 text-base font-bold">Voice &amp; style profile</h2>

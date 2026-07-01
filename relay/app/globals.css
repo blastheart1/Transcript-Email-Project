@@ -61,33 +61,14 @@
   opacity: 1;
 }
 
-/* Mobile: collapse the sidebar into a top bar (matches prototype @820px). */
-@media (max-width: 820px) {
-  #shell {
-    flex-direction: column;
-  }
-  #sidebar {
-    width: 100% !important;
-    height: auto !important;
-    flex-direction: row !important;
-    align-items: center;
-    border-right: none !important;
-    border-bottom: 1px solid #e3e7ea;
-    overflow-x: auto;
-    padding: 10px 14px !important;
-    gap: 6px;
-    position: static !important;
-  }
-  #sidebar .brandblock {
-    margin: 0 8px 0 0 !important;
-    padding: 0 !important;
-    border: none !important;
-  }
-  #sidebar .navgroup {
-    flex-direction: row !important;
-    flex: 1;
-  }
-  #sidebar .sidefoot {
-    display: none !important;
-  }
+/* Mobile foundations: no horizontal scroll, honor the iPhone notch/home bar. */
+html,
+body {
+  overflow-x: hidden;
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
 }
