@@ -1,5 +1,32 @@
 import { describe, it, expect } from "vitest";
-import { flagGuessesInParagraphs } from "../lib/pipeline";
+import { flagGuessesInParagraphs, needsReprocess } from "../lib/pipeline";
+import type { Verdict } from "../lib/types";
+
+const baseVerdict: Verdict = {
+  faithful: true,
+  meaningPreserved: true,
+  accuracy: 1,
+  fabrications: [],
+  omissions: [],
+  unflaggedGuesses: [],
+  styleScore: 1,
+  styleNotes: "",
+};
+
+describe("needsReprocess", () => {
+  it("passes a clean, fully-accurate draft", () => {
+    expect(needsReprocess(baseVerdict)).toBe(false);
+  });
+  it("reprocesses on ANY fabrication, even low severity", () => {
+    expect(
+      needsReprocess({ ...baseVerdict, fabrications: [{ text: "x", severity: "low", why: "y" }] }),
+    ).toBe(true);
+  });
+  it("reprocesses when accuracy drops below 95%", () => {
+    expect(needsReprocess({ ...baseVerdict, accuracy: 0.94 })).toBe(true);
+    expect(needsReprocess({ ...baseVerdict, accuracy: 0.95 })).toBe(false);
+  });
+});
 
 describe("flagGuessesInParagraphs", () => {
   it("splits a matched span into a flagged run", () => {

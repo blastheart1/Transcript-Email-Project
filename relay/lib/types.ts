@@ -15,6 +15,8 @@ export interface Fabrication {
 export interface Verdict {
   faithful: boolean;
   meaningPreserved: boolean;
+  /** 0..1 — how accurately the draft reflects the transcript's facts + intent. */
+  accuracy: number;
   fabrications: Fabrication[];
   omissions: string[];
   /** Inferred spans that should have been flagged but weren't. */
@@ -23,8 +25,12 @@ export interface Verdict {
   styleNotes: string;
   auditorProvider?: string;
   auditorModel?: string;
+  /** How many draft attempts ran (1 = no repair; >1 = reprocessed). */
+  attempts?: number;
   /** True if a stricter repair pass ran before this verdict. */
   repaired?: boolean;
+  /** Set when attempts were exhausted — e.g. likely source voice-note quality. */
+  reviewNote?: string;
 }
 
 /** A persisted style sample (id + the StyleSample fields from constants). */

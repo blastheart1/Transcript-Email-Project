@@ -17,7 +17,7 @@ interface AuditInput {
   draftProvider?: DraftProvider;
 }
 
-type RawVerdict = Omit<Verdict, "auditorProvider" | "auditorModel" | "repaired">;
+type RawVerdict = Omit<Verdict, "auditorProvider" | "auditorModel" | "repaired" | "attempts">;
 
 async function auditOpenAI(system: string, user: string): Promise<RawVerdict> {
   const openai = getOpenAI();
@@ -107,6 +107,7 @@ export async function auditDraft(input: AuditInput): Promise<Verdict> {
     return {
       faithful,
       meaningPreserved: true,
+      accuracy: deterministic.length === 0 ? 1 : faithful ? 0.9 : 0.6,
       fabrications: deterministic,
       omissions: [],
       unflaggedGuesses: [],
@@ -119,10 +120,15 @@ export async function auditDraft(input: AuditInput): Promise<Verdict> {
 
   const fabrications = mergeFabrications(raw.fabrications || [], deterministic);
   const faithful = raw.faithful && !fabrications.some((f) => f.severity === "high");
+  // Deterministic findings cap the auditor's accuracy claim.
+  let accuracy = typeof raw.accuracy === "number" ? raw.accuracy : 1;
+  if (deterministic.some((f) => f.severity === "high")) accuracy = Math.min(accuracy, 0.6);
+  else if (deterministic.length) accuracy = Math.min(accuracy, 0.9);
 
   return {
     faithful,
     meaningPreserved: raw.meaningPreserved,
+    accuracy,
     fabrications,
     omissions: raw.omissions || [],
     unflaggedGuesses: raw.unflaggedGuesses || [],

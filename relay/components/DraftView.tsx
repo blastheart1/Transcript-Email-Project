@@ -199,9 +199,9 @@ export function DraftView() {
             >
               <AlertIcon size={18} className="mt-px flex-none" />
               <span>
-                <strong className="font-bold">Needs review.</strong> The faithfulness audit flagged
-                content that isn’t supported by your voice note — check the highlighted spans and the
-                Faithfulness check below before sending.
+                <strong className="font-bold">Needs review.</strong>{" "}
+                {note.verdict?.reviewNote ??
+                  "The faithfulness audit flagged content that isn’t supported by your voice note — check the highlighted spans and the Faithfulness check below before sending."}
               </span>
             </div>
           )}
@@ -498,22 +498,35 @@ export function DraftView() {
           {note.verdict && (
             <div className="mt-[18px] overflow-hidden rounded-[14px] border border-line bg-white">
               <div className="flex flex-wrap items-center gap-[9px] border-b border-line-soft px-[18px] py-[15px]">
-                <ShieldIcon size={16} className={note.verdict.faithful ? "text-success" : "text-warn-ink"} />
-                <h3 className="m-0 text-sm font-bold">Faithfulness check</h3>
-                <span
-                  className="rounded-full px-[9px] py-[3px] text-[11px] font-bold"
-                  style={
-                    note.verdict.faithful
-                      ? { background: "#E7F1EC", color: "#205C42" }
-                      : { background: "#FBF3E2", color: "#8A6516" }
-                  }
-                >
-                  {note.verdict.faithful ? "Grounded" : "Needs review"}
-                </span>
-                <span className="ml-auto text-[11.5px] text-faint">
-                  {note.verdict.auditorModel ? `audited by ${note.verdict.auditorModel}` : "deterministic checks"}
-                  {note.verdict.repaired ? " · auto-repaired" : ""}
-                </span>
+                {(() => {
+                  const grounded = note.status !== "needs_review";
+                  return (
+                    <>
+                      <ShieldIcon size={16} className={grounded ? "text-success" : "text-warn-ink"} />
+                      <h3 className="m-0 text-sm font-bold">Faithfulness check</h3>
+                      <span
+                        className="rounded-full px-[9px] py-[3px] text-[11px] font-bold"
+                        style={
+                          grounded
+                            ? { background: "#E7F1EC", color: "#205C42" }
+                            : { background: "#FBF3E2", color: "#8A6516" }
+                        }
+                      >
+                        {grounded ? "Grounded" : "Needs review"}
+                      </span>
+                      <span
+                        className="rounded-full bg-tint-chip px-[9px] py-[3px] text-[11px] font-bold text-slate-500"
+                        data-tip="How accurately the draft reflects your voice note"
+                      >
+                        {Math.round((note.verdict.accuracy ?? 0) * 100)}% accurate
+                      </span>
+                      <span className="ml-auto text-[11.5px] text-faint">
+                        {note.verdict.auditorModel ? `audited by ${note.verdict.auditorModel}` : "deterministic checks"}
+                        {note.verdict.repaired ? ` · reprocessed ${(note.verdict.attempts ?? 2) - 1}×` : ""}
+                      </span>
+                    </>
+                  );
+                })()}
               </div>
               <div className="flex flex-col gap-3.5 px-[18px] py-4">
                 {note.verdict.fabrications.length === 0 && note.verdict.omissions.length === 0 && (
@@ -565,7 +578,7 @@ export function DraftView() {
                 )}
                 <div className="flex items-center gap-2 border-t border-line-soft pt-3 text-[12.5px] text-muted">
                   <span className="font-semibold text-slate-600">
-                    Style match {Math.round((note.verdict.styleScore ?? 0) * 100)}%
+                    Accuracy {Math.round((note.verdict.accuracy ?? 0) * 100)}% · Style {Math.round((note.verdict.styleScore ?? 0) * 100)}%
                   </span>
                   {note.verdict.styleNotes && <span>· {note.verdict.styleNotes}</span>}
                 </div>

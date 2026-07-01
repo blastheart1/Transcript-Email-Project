@@ -102,6 +102,7 @@ Report, as structured JSON:
 - "unflaggedGuesses": inferred/assumed spans that a reviewer should double-check but which appear as plain, confident text.
 - "meaningPreserved": true only if the draft faithfully conveys the speaker's intent.
 - "faithful": true only if there are NO high-severity fabrications.
+- "accuracy": 0.0–1.0 — how faithfully and accurately the draft reflects the transcript's facts AND intent. 1.0 = every statement is grounded in the note and the meaning is preserved exactly. Deduct for any added/invented detail, any distortion or over-statement, and any substantive omission. Be strict: an unflagged inferred detail or a shifted meaning should pull this below 0.95.
 - "styleScore": 0.0–1.0, how well the draft matches ${senderName}'s voice in the samples below (greeting, warmth, rhythm, sign-off).
 - "styleNotes": one short line on tone/style fit.
 
@@ -121,6 +122,7 @@ export const VERDICT_SCHEMA = {
   required: [
     "faithful",
     "meaningPreserved",
+    "accuracy",
     "fabrications",
     "omissions",
     "unflaggedGuesses",
@@ -130,6 +132,7 @@ export const VERDICT_SCHEMA = {
   properties: {
     faithful: { type: "boolean" },
     meaningPreserved: { type: "boolean" },
+    accuracy: { type: "number" },
     fabrications: {
       type: "array",
       items: {
