@@ -5,7 +5,7 @@ import authConfig from "@/auth.config";
 // Edge-safe middleware. `req.auth` is populated by the wrapper from the JWT.
 const { auth } = NextAuth(authConfig);
 
-const PUBLIC = ["/login", "/api/auth", "/api/ingest", "/api/providers"];
+const PUBLIC = ["/login", "/automation-flow", "/api/auth", "/api/ingest", "/api/providers"];
 
 export default auth((req) => {
   const { nextUrl } = req;
