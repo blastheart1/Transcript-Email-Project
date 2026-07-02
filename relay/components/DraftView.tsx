@@ -232,19 +232,29 @@ export function DraftView() {
                 {note.audioURL ? (
                   <audio controls src={note.audioURL} className="w-full" />
                 ) : (
-                  <div className="flex items-center gap-3">
-                    <button
-                      className="flex h-9 w-9 flex-none items-center justify-center rounded-full border-none bg-primary text-white"
-                      data-tip="Original recording isn’t stored for sample notes"
-                      aria-label="Play recording"
+                  <>
+                    <div
+                      className="flex items-center gap-3"
+                      tabIndex={0}
+                      role="note"
+                      aria-label="Audio playback unavailable"
+                      data-tip="Playback isn’t available for this note. Audio isn’t saved to cloud storage in this version, so seeded and older notes can’t be replayed. Roadmap: store recordings (e.g. Vercel Blob) so any note can be played back."
                     >
-                      <PlayIcon size={14} />
-                    </button>
-                    <div className="relative h-1 flex-1 rounded-[3px] bg-line">
-                      <span className="absolute left-0 top-0 h-full w-0 rounded-[3px] bg-primary" />
+                      <span
+                        aria-hidden="true"
+                        className="flex h-9 w-9 flex-none cursor-not-allowed items-center justify-center rounded-full bg-line text-slate-400"
+                      >
+                        <PlayIcon size={14} />
+                      </span>
+                      <div className="relative h-1 flex-1 rounded-[3px] bg-line">
+                        <span className="absolute left-0 top-0 h-full w-0 rounded-[3px] bg-primary" />
+                      </div>
+                      <span className="text-xs tabular-nums text-faint">{note.duration}</span>
                     </div>
-                    <span className="text-xs tabular-nums text-faint">{note.duration}</span>
-                  </div>
+                    <p className="mt-2 text-[11.5px] leading-snug text-faint">
+                      Playback coming soon — audio storage isn’t wired up yet, so this recording can’t be replayed.
+                    </p>
+                  </>
                 )}
               </div>
               {note.segments && note.segments.length > 0 ? (
